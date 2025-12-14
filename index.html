@@ -1,0 +1,1453 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualisasi Simulasi Metode Clustering Spasial-Temporal</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #1e5799 0%, #207cca 100%);
+            color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 16px;
+            opacity: 0.9;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .method-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 25px;
+            justify-content: center;
+        }
+        
+        .tab-btn {
+            padding: 12px 24px;
+            background-color: #e9ecef;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            color: #495057;
+        }
+        
+        .tab-btn:hover {
+            background-color: #dee2e6;
+            transform: translateY(-2px);
+        }
+        
+        .tab-btn.active {
+            background-color: #1e5799;
+            color: white;
+            box-shadow: 0 4px 8px rgba(30, 87, 153, 0.3);
+        }
+        
+        .main-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .visualization-section {
+            flex: 1;
+            min-width: 700px;
+            background-color: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        
+        .controls-section {
+            flex: 0 0 400px;
+            background-color: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        
+        h2 {
+            color: #1e5799;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e9ecef;
+        }
+        
+        h3 {
+            color: #495057;
+            margin: 20px 0 15px 0;
+        }
+        
+        .method-description {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #1e5799;
+        }
+        
+        .method-description p {
+            margin-bottom: 10px;
+        }
+        
+        .param-control {
+            margin-bottom: 20px;
+        }
+        
+        .param-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        .param-value {
+            color: #1e5799;
+            font-weight: bold;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: #e9ecef;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #1e5799;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+        }
+        
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .run-btn {
+            background-color: #28a745;
+            color: white;
+            flex: 1;
+        }
+        
+        .run-btn:hover {
+            background-color: #218838;
+            transform: translateY(-2px);
+        }
+        
+        .reset-btn {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .reset-btn:hover {
+            background-color: #5a6268;
+        }
+        
+        .new-data-btn {
+            background-color: #17a2b8;
+            color: white;
+        }
+        
+        .new-data-btn:hover {
+            background-color: #138496;
+        }
+        
+        #visualization {
+            width: 100%;
+            height: 500px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            position: relative;
+        }
+        
+        .metrics-panel {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 25px;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .metric-item {
+            background-color: white;
+            padding: 12px;
+            border-radius: 6px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1e5799;
+            margin: 5px 0;
+        }
+        
+        .metric-label {
+            font-size: 12px;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 15px;
+            padding: 15px;
+            background-color: white;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+        
+        .legend-label {
+            font-size: 14px;
+        }
+        
+        .noise-color {
+            background-color: #333;
+        }
+        
+        .cluster-0 { background-color: #FF6B6B; }
+        .cluster-1 { background-color: #4ECDC4; }
+        .cluster-2 { background-color: #FFD166; }
+        .cluster-3 { background-color: #06D6A0; }
+        .cluster-4 { background-color: #118AB2; }
+        .cluster-5 { background-color: #EF476F; }
+        .cluster-6 { background-color: #7209B7; }
+        .cluster-7 { background-color: #F15BB5; }
+        
+        .temporal-indicator {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #e9f7fe;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: bold;
+            color: #117a8b;
+        }
+        
+        .algorithm-steps {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        
+        .step {
+            margin-bottom: 8px;
+            padding-left: 15px;
+            position: relative;
+        }
+        
+        .step:before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: #1e5799;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #dee2e6;
+            color: #6c757d;
+            font-size: 14px;
+        }
+        
+        @media (max-width: 1200px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .visualization-section, .controls-section {
+                min-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Visualisasi Simulasi Metode Clustering Spasial-Temporal</h1>
+            <p class="subtitle">Simulasi interaktif untuk membandingkan kinerja ST-DBSCAN, ST-SCKM, dan Hybrid Model dalam pengelompokan data kualitas udara</p>
+        </header>
+        
+        <div class="method-tabs">
+            <button class="tab-btn active" data-method="dbscan">DBSCAN</button>
+            <button class="tab-btn" data-method="st-dbscan">ST-DBSCAN</button>
+            <button class="tab-btn" data-method="sckm">SCKM</button>
+            <button class="tab-btn" data-method="st-sckm">ST-SCKM</button>
+            <button class="tab-btn" data-method="hybrid1">Hybrid 1 (DBSCAN→SCKM)</button>
+            <button class="tab-btn" data-method="hybrid2">Hybrid 2 (SCKM→DBSCAN)</button>
+        </div>
+        
+        <div class="main-content">
+            <div class="visualization-section">
+                <h2 id="method-title">DBSCAN (Density-Based Spatial Clustering)</h2>
+                <div class="method-description" id="method-description">
+                    <p><strong>DBSCAN</strong> mengelompokkan titik data berdasarkan kepadatan. Titik dengan banyak tetangga dalam radius ε membentuk cluster, titik terpencil dianggap noise.</p>
+                    <p>Parameter utama: <strong>ε (eps)</strong> - radius pencarian, <strong>minPts</strong> - minimum titik untuk membentuk cluster.</p>
+                </div>
+                
+                <div id="visualization"></div>
+                
+                <div class="legend" id="legend">
+                    <!-- Legend akan diisi oleh JavaScript -->
+                </div>
+                
+                <div class="temporal-indicator" id="temporal-indicator" style="display: none;">
+                    Waktu: <span id="time-value">t = 0</span>
+                </div>
+                
+                <div class="metrics-panel">
+                    <h3>Metrik Evaluasi</h3>
+                    <div class="metrics-grid" id="metrics">
+                        <!-- Metrics akan diisi oleh JavaScript -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="controls-section">
+                <h2>Kontrol Parameter</h2>
+                
+                <div class="algorithm-steps" id="algorithm-steps">
+                    <div class="step">Inisialisasi parameter</div>
+                    <div class="step">Hitung jarak antar titik</div>
+                    <div class="step">Identifikasi core points</div>
+                    <div class="step">Ekspansi cluster dari core points</div>
+                    <div class="step">Tandai titik noise</div>
+                </div>
+                
+                <div id="dbscan-controls">
+                    <h3>Parameter DBSCAN</h3>
+                    <div class="param-control">
+                        <div class="param-label">
+                            <span>ε (eps): Radius pencarian</span>
+                            <span class="param-value" id="eps-value">0.15</span>
+                        </div>
+                        <input type="range" id="eps-slider" min="0.05" max="0.3" step="0.01" value="0.15">
+                    </div>
+                    
+                    <div class="param-control">
+                        <div class="param-label">
+                            <span>minPts: Minimum titik tetangga</span>
+                            <span class="param-value" id="minpts-value">5</span>
+                        </div>
+                        <input type="range" id="minpts-slider" min="3" max="15" step="1" value="5">
+                    </div>
+                </div>
+                
+                <div id="sckm-controls" style="display: none;">
+                    <h3>Parameter SCKM</h3>
+                    <div class="param-control">
+                        <div class="param-label">
+                            <span>k: Jumlah cluster</span>
+                            <span class="param-value" id="k-value">4</span>
+                        </div>
+                        <input type="range" id="k-slider" min="2" max="8" step="1" value="4">
+                    </div>
+                    
+                    <div class="param-control">
+                        <div class="param-label">
+                            <span>λ: Penalti spasial</span>
+                            <span class="param-value" id="lambda-value">0.5</span>
+                        </div>
+                        <input type="range" id="lambda-slider" min="0" max="2" step="0.1" value="0.5">
+                    </div>
+                </div>
+                
+                <div id="temporal-controls" style="display: none;">
+                    <h3>Parameter Temporal</h3>
+                    <div class="param-control">
+                        <div class="param-label">
+                            <span>εₜ: Radius temporal</span>
+                            <span class="param-value" id="eps-temporal-value">0.5</span>
+                        </div>
+                        <input type="range" id="eps-temporal-slider" min="0.1" max="2" step="0.1" value="0.5">
+                    </div>
+                    
+                    <div class="param-control">
+                        <div class="param-label">
+                            <span>Waktu (t)</span>
+                            <span class="param-value" id="time-slider-value">0</span>
+                        </div>
+                        <input type="range" id="time-slider" min="0" max="10" step="0.5" value="0">
+                    </div>
+                </div>
+                
+                <div class="param-control">
+                    <div class="param-label">
+                        <span>Jumlah titik data</span>
+                        <span class="param-value" id="data-points-value">200</span>
+                    </div>
+                    <input type="range" id="data-points-slider" min="100" max="500" step="50" value="200">
+                </div>
+                
+                <div class="param-control">
+                    <div class="param-label">
+                        <span>Rasio noise</span>
+                        <span class="param-value" id="noise-ratio-value">0.1</span>
+                    </div>
+                    <input type="range" id="noise-ratio-slider" min="0" max="0.3" step="0.05" value="0.1">
+                </div>
+                
+                <div class="buttons">
+                    <button class="run-btn" id="run-btn">Jalankan Clustering</button>
+                    <button class="reset-btn" id="reset-btn">Reset Parameter</button>
+                    <button class="new-data-btn" id="new-data-btn">Data Baru</button>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Visualisasi untuk Tesis: "Perbandingan Kinerja ST-DBSCAN dan ST-SCKM serta Hybrid Model dalam Pengelompokan Data Kualitas Udara Berbasis Spasial-Temporal"</p>
+            <p>Muh. Akbar Idris - Program Studi Statistika dan Sains Data, IPB University</p>
+        </footer>
+    </div>
+    
+    <script>
+        // Konfigurasi global
+        let currentMethod = 'dbscan';
+        let dataPoints = [];
+        let clusters = [];
+        let noisePoints = [];
+        let temporalData = []; // Untuk data temporal
+        let currentTime = 0;
+        
+        // Warna untuk cluster
+        const clusterColors = [
+            '#FF6B6B', '#4ECDC4', '#FFD166', '#06D6A0', 
+            '#118AB2', '#EF476F', '#7209B7', '#F15BB5'
+        ];
+        
+        // Inisialisasi visualisasi
+        const width = 700;
+        const height = 500;
+        const margin = { top: 20, right: 20, bottom: 40, left: 50 };
+        
+        const svg = d3.select("#visualization")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height)
+            .append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+        
+        const plotWidth = width - margin.left - margin.right;
+        const plotHeight = height - margin.top - margin.bottom;
+        
+        // Skala untuk plot
+        const xScale = d3.scaleLinear()
+            .domain([0, 1])
+            .range([0, plotWidth]);
+            
+        const yScale = d3.scaleLinear()
+            .domain([0, 1])
+            .range([plotHeight, 0]);
+        
+        // Tambahkan sumbu
+        svg.append("g")
+            .attr("class", "x-axis")
+            .attr("transform", `translate(0,${plotHeight})`)
+            .call(d3.axisBottom(xScale));
+            
+        svg.append("g")
+            .attr("class", "y-axis")
+            .call(d3.axisLeft(yScale));
+        
+        // Label sumbu
+        svg.append("text")
+            .attr("class", "x-label")
+            .attr("text-anchor", "middle")
+            .attr("x", plotWidth / 2)
+            .attr("y", plotHeight + 35)
+            .text("PM2.5 (normalized)");
+            
+        svg.append("text")
+            .attr("class", "y-label")
+            .attr("text-anchor", "middle")
+            .attr("transform", "rotate(-90)")
+            .attr("x", -plotHeight / 2)
+            .attr("y", -40)
+            .text("CO (normalized)");
+        
+        // Fungsi untuk menghasilkan data acak
+        function generateData(n, noiseRatio = 0.1) {
+            const data = [];
+            const clusters = 4;
+            
+            // Generate beberapa cluster dengan distribusi normal
+            for (let c = 0; c < clusters; c++) {
+                const centerX = 0.2 + Math.random() * 0.6;
+                const centerY = 0.2 + Math.random() * 0.6;
+                const pointsPerCluster = Math.floor(n / clusters);
+                
+                for (let i = 0; i < pointsPerCluster; i++) {
+                    data.push({
+                        x: centerX + (Math.random() - 0.5) * 0.15,
+                        y: centerY + (Math.random() - 0.5) * 0.15,
+                        cluster: c,
+                        noise: false,
+                        temporal: Math.random() * 2 // Nilai temporal untuk ST-methods
+                    });
+                }
+            }
+            
+            // Tambahkan noise points
+            const noiseCount = Math.floor(n * noiseRatio);
+            for (let i = 0; i < noiseCount; i++) {
+                data.push({
+                    x: Math.random(),
+                    y: Math.random(),
+                    cluster: -1,
+                    noise: true,
+                    temporal: Math.random() * 2
+                });
+            }
+            
+            return data;
+        }
+        
+        // Fungsi untuk menghasilkan data temporal
+        function generateTemporalData(n, noiseRatio = 0.1, timeSteps = 5) {
+            const temporalData = [];
+            
+            for (let t = 0; t < timeSteps; t++) {
+                const timeData = generateData(n, noiseRatio);
+                timeData.forEach(point => {
+                    point.t = t;
+                    // Geser cluster sedikit seiring waktu untuk simulasi pola temporal
+                    if (!point.noise) {
+                        point.x += Math.sin(t * 0.5) * 0.05;
+                        point.y += Math.cos(t * 0.5) * 0.05;
+                    }
+                });
+                temporalData.push(timeData);
+            }
+            
+            return temporalData;
+        }
+        
+        // Algoritma DBSCAN sederhana
+        function dbscan(data, eps, minPts) {
+            const clusters = [];
+            const visited = new Set();
+            const noise = [];
+            
+            // Fungsi untuk mendapatkan tetangga
+            function getNeighbors(pointIdx) {
+                const neighbors = [];
+                const point = data[pointIdx];
+                
+                for (let i = 0; i < data.length; i++) {
+                    if (i === pointIdx) continue;
+                    
+                    const dist = Math.sqrt(
+                        Math.pow(data[i].x - point.x, 2) + 
+                        Math.pow(data[i].y - point.y, 2)
+                    );
+                    
+                    if (dist < eps) {
+                        neighbors.push(i);
+                    }
+                }
+                
+                return neighbors;
+            }
+            
+            // Fungsi untuk mengembangkan cluster
+            function expandCluster(pointIdx, neighbors, clusterId) {
+                clusters[clusterId].push(pointIdx);
+                
+                for (let i = 0; i < neighbors.length; i++) {
+                    const neighborIdx = neighbors[i];
+                    
+                    if (!visited.has(neighborIdx)) {
+                        visited.add(neighborIdx);
+                        const neighborNeighbors = getNeighbors(neighborIdx);
+                        
+                        if (neighborNeighbors.length >= minPts) {
+                            neighbors.push(...neighborNeighbors.filter(n => !neighbors.includes(n)));
+                        }
+                    }
+                    
+                    // Tambahkan ke cluster jika belum termasuk di cluster manapun
+                    if (!clusters.some(cluster => cluster.includes(neighborIdx))) {
+                        clusters[clusterId].push(neighborIdx);
+                    }
+                }
+            }
+            
+            let clusterId = 0;
+            
+            for (let i = 0; i < data.length; i++) {
+                if (visited.has(i)) continue;
+                
+                visited.add(i);
+                const neighbors = getNeighbors(i);
+                
+                if (neighbors.length < minPts) {
+                    noise.push(i);
+                } else {
+                    clusters[clusterId] = [];
+                    expandCluster(i, neighbors, clusterId);
+                    clusterId++;
+                }
+            }
+            
+            return { clusters, noise };
+        }
+        
+        // Algoritma ST-DBSCAN (dengan dimensi temporal)
+        function stDbscan(data, epsSpatial, epsTemporal, minPts) {
+            const clusters = [];
+            const visited = new Set();
+            const noise = [];
+            
+            // Fungsi untuk mendapatkan tetangga dengan dimensi temporal
+            function getNeighbors(pointIdx) {
+                const neighbors = [];
+                const point = data[pointIdx];
+                
+                for (let i = 0; i < data.length; i++) {
+                    if (i === pointIdx) continue;
+                    
+                    const spatialDist = Math.sqrt(
+                        Math.pow(data[i].x - point.x, 2) + 
+                        Math.pow(data[i].y - point.y, 2)
+                    );
+                    
+                    const temporalDist = Math.abs(data[i].temporal - point.temporal);
+                    
+                    // Gabungkan jarak spasial dan temporal
+                    const combinedDist = Math.sqrt(
+                        Math.pow(spatialDist / epsSpatial, 2) + 
+                        Math.pow(temporalDist / epsTemporal, 2)
+                    );
+                    
+                    if (combinedDist < 1) {
+                        neighbors.push(i);
+                    }
+                }
+                
+                return neighbors;
+            }
+            
+            // Fungsi untuk mengembangkan cluster (sama seperti DBSCAN)
+            function expandCluster(pointIdx, neighbors, clusterId) {
+                clusters[clusterId].push(pointIdx);
+                
+                for (let i = 0; i < neighbors.length; i++) {
+                    const neighborIdx = neighbors[i];
+                    
+                    if (!visited.has(neighborIdx)) {
+                        visited.add(neighborIdx);
+                        const neighborNeighbors = getNeighbors(neighborIdx);
+                        
+                        if (neighborNeighbors.length >= minPts) {
+                            neighbors.push(...neighborNeighbors.filter(n => !neighbors.includes(n)));
+                        }
+                    }
+                    
+                    if (!clusters.some(cluster => cluster.includes(neighborIdx))) {
+                        clusters[clusterId].push(neighborIdx);
+                    }
+                }
+            }
+            
+            let clusterId = 0;
+            
+            for (let i = 0; i < data.length; i++) {
+                if (visited.has(i)) continue;
+                
+                visited.add(i);
+                const neighbors = getNeighbors(i);
+                
+                if (neighbors.length < minPts) {
+                    noise.push(i);
+                } else {
+                    clusters[clusterId] = [];
+                    expandCluster(i, neighbors, clusterId);
+                    clusterId++;
+                }
+            }
+            
+            return { clusters, noise };
+        }
+        
+        // Algoritma K-Means sederhana (untuk SCKM dasar)
+        function kMeans(data, k, maxIterations = 100) {
+            // Inisialisasi centroid acak
+            let centroids = [];
+            for (let i = 0; i < k; i++) {
+                centroids.push({
+                    x: Math.random(),
+                    y: Math.random()
+                });
+            }
+            
+            let clusters = Array(k).fill().map(() => []);
+            let oldClusters = null;
+            let iterations = 0;
+            
+            while (iterations < maxIterations) {
+                // Reset clusters
+                clusters = Array(k).fill().map(() => []);
+                
+                // Assign points to nearest centroid
+                for (let i = 0; i < data.length; i++) {
+                    let minDist = Infinity;
+                    let nearestCentroid = 0;
+                    
+                    for (let c = 0; c < k; c++) {
+                        const dist = Math.sqrt(
+                            Math.pow(data[i].x - centroids[c].x, 2) + 
+                            Math.pow(data[i].y - centroids[c].y, 2)
+                        );
+                        
+                        if (dist < minDist) {
+                            minDist = dist;
+                            nearestCentroid = c;
+                        }
+                    }
+                    
+                    clusters[nearestCentroid].push(i);
+                }
+                
+                // Periksa konvergensi
+                if (oldClusters && JSON.stringify(clusters) === JSON.stringify(oldClusters)) {
+                    break;
+                }
+                
+                oldClusters = JSON.parse(JSON.stringify(clusters));
+                
+                // Update centroids
+                for (let c = 0; c < k; c++) {
+                    if (clusters[c].length > 0) {
+                        const sumX = clusters[c].reduce((sum, idx) => sum + data[idx].x, 0);
+                        const sumY = clusters[c].reduce((sum, idx) => sum + data[idx].y, 0);
+                        
+                        centroids[c].x = sumX / clusters[c].length;
+                        centroids[c].y = sumY / clusters[c].length;
+                    }
+                }
+                
+                iterations++;
+            }
+            
+            return clusters;
+        }
+        
+        // Algoritma SCKM dengan constraint spasial sederhana
+        function sckm(data, k, lambda) {
+            // Pertama, jalankan K-Means biasa
+            let clusters = kMeans(data, k);
+            
+            // Kemudian terapkan constraint spasial
+            // Sederhananya: jika ada titik yang terlalu jauh dari centroid cluster-nya,
+            // pindahkan ke cluster terdekat secara spasial
+            for (let iter = 0; iter < 10; iter++) {
+                // Hitung centroid untuk setiap cluster
+                const centroids = clusters.map(cluster => {
+                    if (cluster.length === 0) return { x: 0, y: 0 };
+                    
+                    const sumX = cluster.reduce((sum, idx) => sum + data[idx].x, 0);
+                    const sumY = cluster.reduce((sum, idx) => sum + data[idx].y, 0);
+                    
+                    return {
+                        x: sumX / cluster.length,
+                        y: sumY / cluster.length
+                    };
+                });
+                
+                // Reassign points dengan mempertimbangkan constraint spasial
+                const newClusters = Array(k).fill().map(() => []);
+                
+                for (let i = 0; i < data.length; i++) {
+                    let bestCluster = 0;
+                    let bestScore = Infinity;
+                    
+                    for (let c = 0; c < k; c++) {
+                        // Hitung jarak ke centroid
+                        const distToCentroid = Math.sqrt(
+                            Math.pow(data[i].x - centroids[c].x, 2) + 
+                            Math.pow(data[i].y - centroids[c].y, 2)
+                        );
+                        
+                        // Hitung penalti spasial (sederhana)
+                        // Cari tetangga terdekat dalam cluster yang sama
+                        let spatialPenalty = 0;
+                        if (clusters[c].length > 0) {
+                            let minDistInCluster = Infinity;
+                            for (const idx of clusters[c]) {
+                                if (idx === i) continue;
+                                
+                                const dist = Math.sqrt(
+                                    Math.pow(data[i].x - data[idx].x, 2) + 
+                                    Math.pow(data[i].y - data[idx].y, 2)
+                                );
+                                
+                                if (dist < minDistInCluster) {
+                                    minDistInCluster = dist;
+                                }
+                            }
+                            
+                            spatialPenalty = minDistInCluster === Infinity ? 1 : minDistInCluster;
+                        }
+                        
+                        const score = distToCentroid + lambda * spatialPenalty;
+                        
+                        if (score < bestScore) {
+                            bestScore = score;
+                            bestCluster = c;
+                        }
+                    }
+                    
+                    newClusters[bestCluster].push(i);
+                }
+                
+                clusters = newClusters;
+            }
+            
+            return clusters;
+        }
+        
+        // Hybrid 1: DBSCAN -> SCKM
+        function hybridDbscanSckm(data, eps, minPts, k, lambda) {
+            // Tahap 1: DBSCAN
+            const dbscanResult = dbscan(data, eps, minPts);
+            const { clusters: dbscanClusters, noise } = dbscanResult;
+            
+            // Filter out noise points
+            const nonNoiseIndices = [];
+            for (const cluster of dbscanClusters) {
+                nonNoiseIndices.push(...cluster);
+            }
+            
+            const nonNoiseData = nonNoiseIndices.map(idx => data[idx]);
+            
+            // Jika tidak ada data non-noise, kembalikan hasil DBSCAN
+            if (nonNoiseData.length === 0) {
+                return { clusters: dbscanClusters, noise };
+            }
+            
+            // Tahap 2: SCKM pada data non-noise
+            const sckmClusters = sckm(nonNoiseData, k, lambda);
+            
+            // Map kembali ke indeks asli
+            const finalClusters = sckmClusters.map(cluster => 
+                cluster.map(idx => nonNoiseIndices[idx])
+            );
+            
+            return { clusters: finalClusters, noise };
+        }
+        
+        // Hybrid 2: SCKM -> DBSCAN
+        function hybridSckmDbscan(data, k, lambda, eps, minPts) {
+            // Tahap 1: SCKM
+            const sckmClusters = sckm(data, k, lambda);
+            
+            // Tahap 2: DBSCAN pada setiap cluster SCKM
+            const finalClusters = [];
+            let noise = [];
+            
+            for (const cluster of sckmClusters) {
+                if (cluster.length === 0) continue;
+                
+                const clusterData = cluster.map(idx => data[idx]);
+                const dbscanResult = dbscan(clusterData, eps, minPts);
+                
+                // Map kembali ke indeks asli dan tambahkan ke finalClusters
+                for (const dbscanCluster of dbscanResult.clusters) {
+                    finalClusters.push(dbscanCluster.map(idx => cluster[idx]));
+                }
+                
+                // Tambahkan noise dari cluster ini
+                noise.push(...dbscanResult.noise.map(idx => cluster[idx]));
+            }
+            
+            return { clusters: finalClusters, noise };
+        }
+        
+        // Fungsi untuk menghitung metrik evaluasi
+        function calculateMetrics(data, clusters, noise) {
+            // Hitung jumlah cluster
+            const numClusters = clusters.length;
+            
+            // Hitung jumlah noise points
+            const numNoise = noise ? noise.length : 0;
+            
+            // Hitung silhouette score (sederhana)
+            let silhouetteSum = 0;
+            let count = 0;
+            
+            // Untuk setiap titik yang bukan noise
+            const allClusteredPoints = clusters.flat();
+            
+            for (const pointIdx of allClusteredPoints) {
+                const point = data[pointIdx];
+                const clusterIdx = clusters.findIndex(cluster => cluster.includes(pointIdx));
+                
+                if (clusterIdx === -1) continue;
+                
+                // Hitung a(i): jarak rata-rata ke titik lain dalam cluster yang sama
+                let a = 0;
+                const sameCluster = clusters[clusterIdx];
+                for (const otherIdx of sameCluster) {
+                    if (otherIdx === pointIdx) continue;
+                    const other = data[otherIdx];
+                    const dist = Math.sqrt(Math.pow(point.x - other.x, 2) + Math.pow(point.y - other.y, 2));
+                    a += dist;
+                }
+                a = sameCluster.length > 1 ? a / (sameCluster.length - 1) : 0;
+                
+                // Hitung b(i): jarak rata-rata minimum ke titik di cluster lain
+                let minB = Infinity;
+                for (let c = 0; c < clusters.length; c++) {
+                    if (c === clusterIdx) continue;
+                    
+                    let b = 0;
+                    for (const otherIdx of clusters[c]) {
+                        const other = data[otherIdx];
+                        const dist = Math.sqrt(Math.pow(point.x - other.x, 2) + Math.pow(point.y - other.y, 2));
+                        b += dist;
+                    }
+                    b = clusters[c].length > 0 ? b / clusters[c].length : Infinity;
+                    
+                    if (b < minB) {
+                        minB = b;
+                    }
+                }
+                
+                // Hitung silhouette untuk titik ini
+                if (minB === Infinity) {
+                    silhouetteSum += 0;
+                } else {
+                    const s = (minB - a) / Math.max(a, minB);
+                    silhouetteSum += s;
+                }
+                count++;
+            }
+            
+            const silhouetteScore = count > 0 ? silhouetteSum / count : 0;
+            
+            // Hitung Davies-Bouldin Index (sederhana)
+            let dbIndex = 0;
+            if (numClusters > 1) {
+                // Hitung centroid untuk setiap cluster
+                const centroids = clusters.map(cluster => {
+                    if (cluster.length === 0) return { x: 0, y: 0 };
+                    
+                    const sumX = cluster.reduce((sum, idx) => sum + data[idx].x, 0);
+                    const sumY = cluster.reduce((sum, idx) => sum + data[idx].y, 0);
+                    
+                    return {
+                        x: sumX / cluster.length,
+                        y: sumY / cluster.length
+                    };
+                });
+                
+                // Hitung dispersi untuk setiap cluster (rata-rata jarak ke centroid)
+                const dispersions = clusters.map((cluster, idx) => {
+                    if (cluster.length === 0) return 0;
+                    
+                    let sumDist = 0;
+                    for (const pointIdx of cluster) {
+                        const point = data[pointIdx];
+                        const dist = Math.sqrt(
+                            Math.pow(point.x - centroids[idx].x, 2) + 
+                            Math.pow(point.y - centroids[idx].y, 2)
+                        );
+                        sumDist += dist;
+                    }
+                    return sumDist / cluster.length;
+                });
+                
+                // Hitung DB Index
+                let dbSum = 0;
+                for (let i = 0; i < numClusters; i++) {
+                    let maxRatio = 0;
+                    
+                    for (let j = 0; j < numClusters; j++) {
+                        if (i === j) continue;
+                        
+                        // Jarak antara centroid i dan j
+                        const centroidDist = Math.sqrt(
+                            Math.pow(centroids[i].x - centroids[j].x, 2) + 
+                            Math.pow(centroids[i].y - centroids[j].y, 2)
+                        );
+                        
+                        const ratio = (dispersions[i] + dispersions[j]) / centroidDist;
+                        
+                        if (ratio > maxRatio) {
+                            maxRatio = ratio;
+                        }
+                    }
+                    
+                    dbSum += maxRatio;
+                }
+                
+                dbIndex = dbSum / numClusters;
+            }
+            
+            return {
+                numClusters,
+                numNoise,
+                silhouetteScore: silhouetteScore.toFixed(3),
+                dbIndex: dbIndex.toFixed(3)
+            };
+        }
+        
+        // Fungsi untuk memperbarui visualisasi
+        function updateVisualization() {
+            // Hapus titik sebelumnya
+            svg.selectAll(".data-point").remove();
+            svg.selectAll(".cluster-hull").remove();
+            
+            // Filter data berdasarkan waktu untuk metode temporal
+            let displayData = dataPoints;
+            if (currentMethod === 'st-dbscan' || currentMethod === 'st-sckm') {
+                displayData = temporalData.length > 0 ? 
+                    temporalData[Math.min(Math.floor(currentTime), temporalData.length - 1)] : 
+                    dataPoints;
+                
+                // Update indikator waktu
+                document.getElementById("time-value").textContent = `t = ${currentTime.toFixed(1)}`;
+            }
+            
+            // Tentukan hasil clustering berdasarkan metode
+            let result;
+            const eps = parseFloat(document.getElementById("eps-slider").value);
+            const minPts = parseInt(document.getElementById("minpts-slider").value);
+            const k = parseInt(document.getElementById("k-slider").value);
+            const lambda = parseFloat(document.getElementById("lambda-slider").value);
+            const epsTemporal = parseFloat(document.getElementById("eps-temporal-slider").value);
+            
+            switch(currentMethod) {
+                case 'dbscan':
+                    result = dbscan(displayData, eps, minPts);
+                    break;
+                case 'st-dbscan':
+                    result = stDbscan(displayData, eps, epsTemporal, minPts);
+                    break;
+                case 'sckm':
+                    result = { clusters: sckm(displayData, k, lambda), noise: [] };
+                    break;
+                case 'st-sckm':
+                    // Untuk ST-SCKM, gunakan SCKM biasa (karena implementasi sederhana)
+                    result = { clusters: sckm(displayData, k, lambda), noise: [] };
+                    break;
+                case 'hybrid1':
+                    result = hybridDbscanSckm(displayData, eps, minPts, k, lambda);
+                    break;
+                case 'hybrid2':
+                    result = hybridSckmDbscan(displayData, k, lambda, eps, minPts);
+                    break;
+                default:
+                    result = { clusters: [], noise: [] };
+            }
+            
+            clusters = result.clusters;
+            noisePoints = result.noise;
+            
+            // Hitung metrik
+            const metrics = calculateMetrics(displayData, clusters, noisePoints);
+            
+            // Update metrik di UI
+            document.getElementById("metrics").innerHTML = `
+                <div class="metric-item">
+                    <div class="metric-value">${metrics.numClusters}</div>
+                    <div class="metric-label">Cluster</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">${metrics.numNoise}</div>
+                    <div class="metric-label">Noise</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">${metrics.silhouetteScore}</div>
+                    <div class="metric-label">Silhouette</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">${metrics.dbIndex}</div>
+                    <div class="metric-label">DB Index</div>
+                </div>
+            `;
+            
+            // Gambar titik data
+            const points = svg.selectAll(".data-point")
+                .data(displayData)
+                .enter()
+                .append("circle")
+                .attr("class", "data-point")
+                .attr("cx", d => xScale(d.x))
+                .attr("cy", d => yScale(d.y))
+                .attr("r", 5)
+                .attr("fill", (d, i) => {
+                    // Cari cluster mana yang berisi titik ini
+                    let clusterIdx = -1;
+                    for (let c = 0; c < clusters.length; c++) {
+                        if (clusters[c].includes(i)) {
+                            clusterIdx = c;
+                            break;
+                        }
+                    }
+                    
+                    // Periksa apakah ini noise
+                    if (noisePoints.includes(i)) {
+                        return "#333"; // Warna untuk noise
+                    }
+                    
+                    // Jika ditemukan dalam cluster, beri warna cluster
+                    if (clusterIdx >= 0) {
+                        return clusterColors[clusterIdx % clusterColors.length];
+                    }
+                    
+                    // Default (tidak tercluster)
+                    return "#aaa";
+                })
+                .attr("stroke", "#fff")
+                .attr("stroke-width", 1)
+                .attr("opacity", 0.8);
+            
+            // Tambahkan tooltip
+            points.append("title")
+                .text((d, i) => {
+                    let clusterInfo = "Noise";
+                    for (let c = 0; c < clusters.length; c++) {
+                        if (clusters[c].includes(i)) {
+                            clusterInfo = `Cluster ${c}`;
+                            break;
+                        }
+                    }
+                    return `PM2.5: ${d.x.toFixed(2)}, CO: ${d.y.toFixed(2)}\n${clusterInfo}`;
+                });
+            
+            // Gambar convex hull untuk setiap cluster (kecuali noise)
+            for (let c = 0; c < clusters.length; c++) {
+                if (clusters[c].length < 3) continue;
+                
+                // Dapatkan titik-titik dalam cluster
+                const clusterPoints = clusters[c].map(idx => [xScale(displayData[idx].x), yScale(displayData[idx].y)]);
+                
+                // Hitung convex hull (sederhana)
+                if (clusterPoints.length > 2) {
+                    // Urutkan berdasarkan x
+                    clusterPoints.sort((a, b) => a[0] - b[0]);
+                    
+                    // Buat garis hull sederhana
+                    const hullLine = d3.line()
+                        .x(d => d[0])
+                        .y(d => d[1])
+                        .curve(d3.curveLinearClosed);
+                    
+                    svg.append("path")
+                        .attr("class", "cluster-hull")
+                        .attr("d", hullLine(clusterPoints))
+                        .attr("fill", clusterColors[c % clusterColors.length])
+                        .attr("fill-opacity", 0.1)
+                        .attr("stroke", clusterColors[c % clusterColors.length])
+                        .attr("stroke-width", 1.5)
+                        .attr("stroke-dasharray", "5,5");
+                }
+            }
+            
+            // Update legenda
+            updateLegend();
+        }
+        
+        // Fungsi untuk memperbarui legenda
+        function updateLegend() {
+            const legendContainer = document.getElementById("legend");
+            let legendHTML = "";
+            
+            // Tambahkan item untuk setiap cluster
+            for (let c = 0; c < clusters.length; c++) {
+                if (clusters[c].length === 0) continue;
+                
+                legendHTML += `
+                    <div class="legend-item">
+                        <div class="legend-color cluster-${c % 8}"></div>
+                        <div class="legend-label">Cluster ${c} (${clusters[c].length} titik)</div>
+                    </div>
+                `;
+            }
+            
+            // Tambahkan item untuk noise
+            if (noisePoints.length > 0) {
+                legendHTML += `
+                    <div class="legend-item">
+                        <div class="legend-color noise-color"></div>
+                        <div class="legend-label">Noise (${noisePoints.length} titik)</div>
+                    </div>
+                `;
+            }
+            
+            legendContainer.innerHTML = legendHTML;
+        }
+        
+        // Fungsi untuk memperbarui tampilan berdasarkan metode yang dipilih
+        function updateMethodView(method) {
+            currentMethod = method;
+            
+            // Update tab aktif
+            document.querySelectorAll(".tab-btn").forEach(btn => {
+                btn.classList.remove("active");
+            });
+            document.querySelector(`[data-method="${method}"]`).classList.add("active");
+            
+            // Update judul dan deskripsi
+            const methodInfo = {
+                'dbscan': {
+                    title: 'DBSCAN (Density-Based Spatial Clustering)',
+                    description: 'DBSCAN mengelompokkan titik data berdasarkan kepadatan. Titik dengan banyak tetangga dalam radius ε membentuk cluster, titik terpencil dianggap noise.',
+                    steps: [
+                        'Inisialisasi parameter ε dan minPts',
+                        'Hitung jarak Euclidean antar titik',
+                        'Identifikasi core points (titik dengan ≥ minPts tetangga dalam radius ε)',
+                        'Ekspansi cluster dari core points',
+                        'Tandai titik yang tidak terjangkau sebagai noise'
+                    ]
+                },
+                'st-dbscan': {
+                    title: 'ST-DBSCAN (Spatio-Temporal DBSCAN)',
+                    description: 'ST-DBSCAN memperluas DBSCAN dengan mempertimbangkan dimensi waktu. Jarak gabungan dihitung dari komponen spasial dan temporal.',
+                    steps: [
+                        'Inisialisasi parameter εₛ (spasial), εₜ (temporal), dan minPts',
+                        'Hitung jarak gabungan: d = √((dₛ/εₛ)² + (dₜ/εₜ)²)',
+                        'Identifikasi core points dalam ruang-waktu',
+                        'Ekspansi cluster dengan mempertimbangkan kedekatan spasial dan temporal',
+                        'Tandai titik sebagai noise jika tidak memenuhi kepadatan'
+                    ]
+                },
+                'sckm': {
+                    title: 'SCKM (Spatially Constrained K-Means)',
+                    description: 'SCKM memodifikasi K-Means dengan menambahkan constraint spasial untuk memastikan anggota cluster berdekatan secara geografis.',
+                    steps: [
+                        'Tentukan jumlah cluster k dan parameter penalti λ',
+                        'Inisialisasi centroid secara acak',
+                        'Assign titik ke cluster terdekat dengan mempertimbangkan jarak dan penalti spasial',
+                        'Update centroid berdasarkan anggota cluster',
+                        'Ulangi hingga konvergen'
+                    ]
+                },
+                'st-sckm': {
+                    title: 'ST-SCKM (Spatio-Temporal SCKM)',
+                    description: 'ST-SCKM memperluas SCKM dengan memasukkan dimensi waktu dalam fungsi objektif, memastikan kontiguitas spasial dan kesamaan temporal.',
+                    steps: [
+                        'Tentukan k, λ, dan bobot temporal wₜ',
+                        'Minimalkan fungsi: J = wₛΣ|x-μ|² + wₜΣ|z-μₜ|² + λΣI(ℓᵢ≠ℓⱼ)',
+                        'Pertimbangkan kedekatan spasial dan temporal secara simultan',
+                        'Iterasi hingga konvergen dengan constraint kontiguitas'
+                    ]
+                },
+                'hybrid1': {
+                    title: 'Hybrid Model 1 (DBSCAN → SCKM)',
+                    description: 'Model hybrid dua tahap: DBSCAN untuk deteksi cluster berbasis kepadatan dan filtering noise, kemudian SCKM untuk refinement dengan constraint spasial.',
+                    steps: [
+                        'Tahap 1: Jalankan DBSCAN untuk identifikasi cluster inti dan noise',
+                        'Filter out noise points',
+                        'Tahap 2: Terapkan SCKM pada data non-noise',
+                        'Hasil: Cluster yang padat dan kontigu secara spasial'
+                    ]
+                },
+                'hybrid2': {
+                    title: 'Hybrid Model 2 (SCKM → DBSCAN)',
+                    description: 'Model hybrid dua tahap: SCKM untuk partisi awal dengan constraint spasial, kemudian DBSCAN untuk deteksi sub-struktur dan outlier dalam setiap cluster.',
+                    steps: [
+                        'Tahap 1: Jalankan SCKM untuk membagi wilayah menjadi cluster spasial',
+                        'Tahap 2: Terapkan DBSCAN pada setiap cluster SCKM',
+                        'Deteksi sub-cluster berbasis kepadatan dalam setiap wilayah',
+                        'Identifikasi outlier internal dalam setiap cluster'
+                    ]
+                }
+            };
+            
+            document.getElementById("method-title").textContent = methodInfo[method].title;
+            document.getElementById("method-description").innerHTML = `<p><strong>${methodInfo[method].title.split(' ')[0]}</strong> ${methodInfo[method].description}</p>`;
+            
+            // Update langkah algoritma
+            const stepsContainer = document.getElementById("algorithm-steps");
+            stepsContainer.innerHTML = methodInfo[method].steps.map(step => `<div class="step">${step}</div>`).join('');
+            
+            // Tampilkan/sembunyikan kontrol yang relevan
+            document.getElementById("dbscan-controls").style.display = 
+                (method === 'dbscan' || method === 'st-dbscan' || method.includes('hybrid')) ? 'block' : 'none';
+            
+            document.getElementById("sckm-controls").style.display = 
+                (method === 'sckm' || method === 'st-sckm' || method.includes('hybrid')) ? 'block' : 'none';
+            
+            document.getElementById("temporal-controls").style.display = 
+                (method.includes('st-')) ? 'block' : 'none';
+            
+            document.getElementById("temporal-indicator").style.display = 
+                (method.includes('st-')) ? 'block' : 'none';
+            
+            // Jalankan clustering untuk metode baru
+            updateVisualization();
+        }
+        
+        // Fungsi untuk menghasilkan data baru
+        function generateNewData() {
+            const n = parseInt(document.getElementById("data-points-slider").value);
+            const noiseRatio = parseFloat(document.getElementById("noise-ratio-slider").value);
+            
+            dataPoints = generateData(n, noiseRatio);
+            
+            // Generate data temporal untuk metode ST
+            if (currentMethod.includes('st-')) {
+                temporalData = generateTemporalData(n, noiseRatio, 11);
+            }
+            
+            updateVisualization();
+        }
+        
+        // Event listeners untuk tab
+        document.querySelectorAll(".tab-btn").forEach(btn => {
+            btn.addEventListener("click", function() {
+                const method = this.getAttribute("data-method");
+                updateMethodView(method);
+            });
+        });
+        
+        // Event listeners untuk slider
+        document.getElementById("eps-slider").addEventListener("input", function() {
+            document.getElementById("eps-value").textContent = this.value;
+        });
+        
+        document.getElementById("minpts-slider").addEventListener("input", function() {
+            document.getElementById("minpts-value").textContent = this.value;
+        });
+        
+        document.getElementById("k-slider").addEventListener("input", function() {
+            document.getElementById("k-value").textContent = this.value;
+        });
+        
+        document.getElementById("lambda-slider").addEventListener("input", function() {
+            document.getElementById("lambda-value").textContent = this.value;
+        });
+        
+        document.getElementById("eps-temporal-slider").addEventListener("input", function() {
+            document.getElementById("eps-temporal-value").textContent = this.value;
+        });
+        
+        document.getElementById("time-slider").addEventListener("input", function() {
+            currentTime = parseFloat(this.value);
+            document.getElementById("time-slider-value").textContent = this.value;
+            updateVisualization();
+        });
+        
+        document.getElementById("data-points-slider").addEventListener("input", function() {
+            document.getElementById("data-points-value").textContent = this.value;
+        });
+        
+        document.getElementById("noise-ratio-slider").addEventListener("input", function() {
+            document.getElementById("noise-ratio-value").textContent = this.value;
+        });
+        
+        // Event listeners untuk tombol
+        document.getElementById("run-btn").addEventListener("click", updateVisualization);
+        document.getElementById("reset-btn").addEventListener("click", function() {
+            // Reset slider ke nilai default
+            document.getElementById("eps-slider").value = 0.15;
+            document.getElementById("eps-value").textContent = "0.15";
+            
+            document.getElementById("minpts-slider").value = 5;
+            document.getElementById("minpts-value").textContent = "5";
+            
+            document.getElementById("k-slider").value = 4;
+            document.getElementById("k-value").textContent = "4";
+            
+            document.getElementById("lambda-slider").value = 0.5;
+            document.getElementById("lambda-value").textContent = "0.5";
+            
+            document.getElementById("eps-temporal-slider").value = 0.5;
+            document.getElementById("eps-temporal-value").textContent = "0.5";
+            
+            document.getElementById("time-slider").value = 0;
+            document.getElementById("time-slider-value").textContent = "0";
+            currentTime = 0;
+            
+            updateVisualization();
+        });
+        
+        document.getElementById("new-data-btn").addEventListener("click", generateNewData);
+        
+        // Inisialisasi
+        generateNewData();
+        updateVisualization();
+    </script>
+</body>
+</html>
